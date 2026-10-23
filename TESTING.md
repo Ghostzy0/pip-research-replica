@@ -1,3 +1,7 @@
+## Current published source checks — 23 October 2026
+
+Both public source profiles passed hosted macOS 15.7.9 arm64 / Swift 6.1.2 CI: 67 tests passed, one intentional opt-in live test skipped, zero failures, followed by all owned release-product builds. [This profile's passing run](https://github.com/Ghostzy0/pip-research-replica/actions/runs/39892438845). A single static-function call was qualified to remove an ambiguity found by Swift 6.1.2. The newer local four-product package batch passed the same 67-pass/1-skip suite on macOS 27.0.1 / Swift 6.4. See [current package hashes and evidence boundaries](docs/PUBLICATION.md); older hashes below are historical.
+
 This repository exports one runnable executable: ResearchBaseline. Tests exercise the shared core and desktop code included here; other edition entry points are excluded.
 
 # Verification
@@ -35,6 +39,6 @@ An earlier packaged neutral baseline ran synthetic MD/TXT/PDF imports, evidence 
 
 On an earlier pre-enhancement build, a real optional local Qwen request was rejected for missing attribution; no draft was saved, evidence remained and the model unloaded. That older result predates the current request/response contract. The current targeted request result is described above: valid JSON still failed attribution and contradicted its sources. Real generation success has not been demonstrated; transport fixtures do not prove grounding.
 
-Reproduce default tests with `swift test --jobs 2`. Opt-in real writer test: `PIP_RESEARCH_TEST_LOCAL_DRAFT=1 swift test --filter LocalDraftLiveTests --jobs 2`, only with the documented compatible local runtime/model; it sends its synthetic fixture to that local service and has not produced an accepted draft in the tested pinned-model request described above. Build using `scripts/build.sh baseline`, `pip`, `baseline-enhanced`, `pip-enhanced`; run matching sample scenarios. Enhanced search/excerpt tests passed in the frozen default suite; broader interactive Pip/enhanced workflows and accessibility coverage remain pending.
+Reproduce default tests with `swift test --jobs 2`. Opt-in real writer test: `PIP_RESEARCH_TEST_LOCAL_DRAFT=1 swift test --filter LocalDraftLiveTests --jobs 2`, only with the documented compatible local runtime/model; it sends its synthetic fixture to that local service and has not produced an accepted draft in the tested pinned-model request described above. Build only the aliases listed in this repository's README and DISTRIBUTION.json; run matching sample scenarios. Enhanced search/excerpt tests passed in the frozen default suite; broader interactive Pip/enhanced workflows and accessibility coverage remain pending.
 
 No claimed Intel, older-macOS runtime, VoiceOver, full reference parity, notarisation, energy efficiency or stable-production acceptance. A limited free signed-in reference walkthrough observed multi-source answers/citation navigation; an absent-fact query remained unfinished.
