@@ -1,6 +1,6 @@
 {
   "files": {
-    "Sources/ResearchCore/Importer.swift": "5d353300b0dfd5a363ac136dc2b9ea8ebf0b846407d2cbcdde3a407c3f519e4c",
+    "Sources/ResearchCore/Importer.swift": "d19e6c06f7b8896bee533dbf8e3d93b08b503524052a74f88da095c4f76a7622",
     "Sources/ResearchCore/Models.swift": "aff66a7556db97307c7784ccd1a05c4d0edd838d560c07ae06a84307c57045b8",
     "Sources/ResearchCore/ResearchStore.swift": "680afba29c4314b7de9f0bc691380fed77e34e35117de24665b2fb1876b30ad5",
     "Sources/ResearchCore/Retrieval.swift": "8189a842f359d9e52b89d43bff3469ebba875746870999a380c967ea33741071"

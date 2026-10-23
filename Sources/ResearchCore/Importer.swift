@@ -48,7 +48,7 @@ enum SourceImporter {
             pages = [SourcePage(number: nil, text: text)]
         }
         let digest = hash(data)
-        let passages = pages.flatMap { passages(page: $0, id: id, hash: digest, markdown: kind == .markdown) }
+        let passages = pages.flatMap { SourceImporter.passages(page: $0, id: id, hash: digest, markdown: kind == .markdown) }
         guard !passages.isEmpty else { throw ResearchError.noExtractableText }
         return SourceDocument(id: id, notebookID: notebookID, title: title, kind: kind, sha256: digest,
                               originalFilename: "\(id.uuidString).\(kind == .markdown ? "md" : kind.rawValue)", importedAt: Date(), pages: pages, passages: passages, warnings: warnings)
