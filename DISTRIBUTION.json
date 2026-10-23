@@ -1,0 +1,15 @@
+{
+  "products": [
+    {
+      "alias": "baseline",
+      "bundle": "uk.pipreps.research.baseline",
+      "display": "Research Baseline",
+      "product": "ResearchBaseline",
+      "version": "0.1.1"
+    }
+  ],
+  "profile": "replica",
+  "repository": "pip-research-replica",
+  "schema": 1,
+  "sharedCoreManifestSHA256": "b5b2a171dcb50e651c52e486fb94bc4c98a09edb5f6f0569f0dcd25032f10c79"
+}
