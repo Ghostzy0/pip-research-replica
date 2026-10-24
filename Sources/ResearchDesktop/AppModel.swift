@@ -239,11 +239,17 @@ import ResearchCore
         manualNotesOwners[notebookID] == sessionID
     }
     public func requestApplicationQuit() {
-        guard pendingManualNotesQuit == nil else { return }
+        coordinateApplicationQuit { [weak self] shouldTerminate in
+            guard shouldTerminate else { return }
+            self?.terminateApplication()
+        }
+    }
+    public func coordinateApplicationQuit(completion: @escaping (Bool) -> Void) {
+        guard pendingManualNotesQuit == nil else { completion(false); return }
         let sessionIDs = Set(manualNotesSessions.keys)
-        guard !sessionIDs.isEmpty else { terminateApplication(); return }
+        guard !sessionIDs.isEmpty else { completion(true); return }
         let requestID = UUID()
-        pendingManualNotesQuit = PendingManualNotesQuit(requestID: requestID, sessionIDs: sessionIDs)
+        pendingManualNotesQuit = PendingManualNotesQuit(requestID: requestID, sessionIDs: sessionIDs, completion: completion)
         for id in sessionIDs {
             guard pendingManualNotesQuit?.requestID == requestID else { break }
             manualNotesSessions[id]?.onQuitRequest(requestID)
@@ -283,7 +289,7 @@ import ResearchCore
         }
         pendingManualNotesQuit = nil
         for id in pending.sessionIDs { manualNotesSessions[id]?.onQuitFinalize(requestID) }
-        terminateApplication()
+        pending.completion(true)
     }
     private func startNextManualNotesQuitCommit(requestID: UUID) {
         guard let pending = pendingManualNotesQuit, pending.requestID == requestID,
@@ -302,6 +308,7 @@ import ResearchCore
         for id in pending.sessionIDs {
             manualNotesSessions[id]?.onQuitCancel(requestID, restoreDiscarded.contains(id))
         }
+        pending.completion(false)
     }
     public func searchHistory(_ query: String) async {
         guard edition.enhanced, let notebookID = selectedNotebookID, let store else { historyResults = []; return }
@@ -374,6 +381,7 @@ private struct ManualNotesSession {
 private struct PendingManualNotesQuit {
     let requestID: UUID
     let sessionIDs: Set<UUID>
+    let completion: (Bool) -> Void
     var decisions: [UUID: ManualNotesQuitChoice] = [:]
     var completed = Set<UUID>()
     var commitOrder: [UUID] = []

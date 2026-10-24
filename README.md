@@ -10,7 +10,7 @@ An independent native macOS partial recreation of a focused NotebookLM / Gemini 
 
 The next intended version is not yet published. The 23 October alpha remains the existing historical release; see [publication history](docs/PUBLICATION.md).
 
-The source implements notebook-scoped manual notes and interrupted-edit recovery. One Notes editor may own a notebook across scenes, with the scene retaining the notebook target it opened. App quit collects explicit Save, Discard, or Cancel choices and waits for successful writes/recovery. Source tests cover the state coordination, but the resumed packaged native Notes and Cmd-Q paths remain unaccepted.
+The source implements notebook-scoped manual notes and interrupted-edit recovery. Each scene retains its captured notebook target, with one Notes editor owner per notebook. A shared AppKit termination delegate routes normal termination through the deferred Save/Discard/Cancel coordinator; four bridge tests cover its exactly-once reply. Packaged native Dock/menu/Cmd-Q/window-close behavior remains unaccepted.
 
 ## What it does
 
@@ -36,6 +36,6 @@ The app is ad-hoc signed, not Developer ID signed or notarised. Do not disable m
 
 ## Qualification status
 
-The 24 October qualification-3 default suite completed 76 cases: 73 passed, 3 opt-in live-writer cases skipped, 0 failures. All four source-declared products built, passed ad-hoc signature verification, and passed private-path string scans. Separately, an opt-in live run passed the conflict-plus-persistence and hostile-source cases; absent-fact failed two expectations: asked for public-holiday hours, it returned `The station garden closes at 18:00 on weekdays [1].` without acknowledging that the source only gives weekday hours. It did not explicitly invent holiday hours. This is not general grounding evidence. These checks do not establish native Notes acceptance or full reference parity. Local generation remains off by default and experimental.
+The 24 October qualification-4 default suite completed 80 cases: 77 passed, 3 opt-in live-writer cases skipped, 0 failures. All four source-declared products built, passed ad-hoc signature verification, and passed private-path string scans. Separately, an opt-in live run passed the conflict-plus-persistence and hostile-source cases; absent-fact failed two expectations: asked for public-holiday hours, it returned `The station garden closes at 18:00 on weekdays [1].` without acknowledging that the source only gives weekday hours. It did not explicitly invent holiday hours. This is not general grounding evidence. These checks do not establish native Notes acceptance or full reference parity. Local generation remains off by default and experimental.
 
 Neutral Core does not implement full generative answers, Studio/audio/video artifacts, web/video/cloud imports, OCR, sharing, or complete reference behavior. Broader accessibility, macOS 14, and Intel acceptance remain open. See [testing](TESTING.md), [parity](PARITY.md), and [publication history](docs/PUBLICATION.md).

@@ -29,7 +29,7 @@ public struct ResearchCommands: Commands {
         }
         CommandGroup(replacing: .appTermination) {
             Button("Quit \(model.edition.displayName)") {
-                model.requestApplicationQuit()
+                NSApp.terminate(nil)
             }.keyboardShortcut("q")
         }
         CommandGroup(replacing: .saveItem) {

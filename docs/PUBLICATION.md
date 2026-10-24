@@ -9,11 +9,11 @@ Those releases and assets are historical artifacts and have not been replaced. T
 
 ## Current qualification evidence
 
-The 24 October qualification-3 source suite completed 76 cases: 73 passed, 3 opt-in live-writer cases skipped, 0 failures. All four source-declared products were built, ad-hoc signature-verified, and scanned for private-path strings. These are local source/package checks; they do not establish public-export privacy/licence acceptance, fresh-clone reproducibility of the resumed export, native Notes interaction, or release publication.
+The 24 October qualification-4 source suite completed 80 cases: 77 passed, 3 opt-in live-writer cases skipped, 0 failures. All four source-declared products were built, ad-hoc signature-verified, and scanned for private-path strings. These are local source/package checks; they do not establish public-export privacy/licence acceptance, fresh-clone reproducibility of the resumed export, native Notes interaction, or release publication.
 
 One bounded synthetic Qwen3 1.7B output returned valid JSON with the requested citation IDs and named the disagreement between two passages. It completed in 2.739 seconds but misleadingly interpreted source/revision dates as dates for the source values. Separately, the opt-in production-model run passed the conflict-plus-persistence case and the hostile-source case. The absent-fact case failed two expectations; asked for public-holiday hours, it returned `The station garden closes at 18:00 on weekdays [1].` without acknowledging the source had weekday-hours information only. One synthetic persistence scenario passed, but general grounding and broader product persistence remain unverified. The writer remains experimental and disabled by default.
 
-The new Notes source coordinates one editor owner per notebook across scenes, preserves the notebook target captured by each scene, and requests Save, Discard, or Cancel choices before app quit. It waits for persistence/recovery work. Source/state tests exist, but the resumed packaged native behavior remains unaccepted, including dirty Cmd-Q and multi-window flows.
+The Notes source preserves each scene's captured target and enforces one editor owner per notebook. A shared AppKit termination delegate routes normal termination through the deferred Save/Discard/Cancel coordinator; four source tests cover its exactly-once reply behavior. Native Dock/menu/Cmd-Q/window-close and multiwindow flows remain unaccepted.
 
 ## Published release checks, 23 October
 
