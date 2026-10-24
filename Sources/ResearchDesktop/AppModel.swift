@@ -32,8 +32,12 @@ import ResearchCore
     private var manualNotesOwners: [UUID: UUID] = [:]
     private var manualNotesSessions: [UUID: ManualNotesSession] = [:]
     private var pendingManualNotesQuit: PendingManualNotesQuit?
+    private(set) var manualNotesSessionRevision: UInt64 = 0
     var terminateApplication: () -> Void = { NSApp.terminate(nil) }
     public var isFinishingManualNotesQuit: Bool { pendingManualNotesQuit?.committing == true }
+    var canTerminateWithNoManualNotesWork: Bool {
+        manualNotesSessions.isEmpty && pendingManualNotesQuit == nil
+    }
     public var selectedNotebook: Notebook? { library.notebooks.first { $0.id == selectedNotebookID } }
     public var sources: [SourceDocument] { library.sources.filter { $0.notebookID == selectedNotebookID } }
     public var filteredSources: [SourceDocument] { sources.filter { sourceQuery.isEmpty || $0.title.localizedCaseInsensitiveContains(sourceQuery) } }
@@ -212,6 +216,8 @@ import ResearchCore
             guard !pending.committing else { return false }
             cancelManualNotesQuit(requestID: pending.requestID)
         }
+        let isNewRegistration = manualNotesOwners[notebookID] != sessionID
+            || manualNotesSessions[sessionID]?.notebookID != notebookID
         manualNotesOwners[notebookID] = sessionID
         manualNotesSessions[sessionID] = ManualNotesSession(
             notebookID: notebookID,
@@ -220,6 +226,7 @@ import ResearchCore
             onQuitCancel: onQuitCancel,
             onQuitFinalize: onQuitFinalize
         )
+        if isNewRegistration { manualNotesSessionRevision &+= 1 }
         return true
     }
     public func releaseManualNotesSession(notebookID: UUID, sessionID: UUID) {
@@ -230,6 +237,7 @@ import ResearchCore
         }
         manualNotesOwners[notebookID] = nil
         manualNotesSessions[sessionID] = nil
+        manualNotesSessionRevision &+= 1
     }
     public func cancelManualNotesQuitForSessionClose(sessionID: UUID) {
         guard let pending = pendingManualNotesQuit, pending.sessionIDs.contains(sessionID) else { return }
