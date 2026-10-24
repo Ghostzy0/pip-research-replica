@@ -3,7 +3,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 edition="${1:-}"
 case "$edition" in
-  baseline) product=ResearchBaseline; display='Research Baseline'; identifier=uk.pipreps.research.baseline; version=0.1.1 ;;
+  baseline) product=ResearchBaseline; display='Research Baseline'; identifier=uk.pipreps.research.baseline; version=0.1.2 ;;
   *) echo 'Usage: scripts/package.sh [baseline] [binary]' >&2; exit 2 ;;
 esac
 binary="${2:-.build/release/$product}"

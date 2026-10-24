@@ -55,6 +55,265 @@ import ResearchCore
         _ = await (first, second)
         XCTAssertTrue(model.ready); XCTAssertNil(model.error)
     }
+    func testManualNotesSessionOwnershipIsNotebookScopedAndQuitCanCancel() async throws {
+        let directory = root(); defer { try? FileManager.default.removeItem(at: directory) }
+        let model = AppModel(edition: .baseline, directory: directory); await model.open()
+        model.createNotebook("One"); try await settled(model)
+        let one = try XCTUnwrap(model.selectedNotebookID)
+        model.createNotebook("Two"); try await settled(model)
+        let two = try XCTUnwrap(model.selectedNotebookID)
+        let firstSession = UUID(), deniedSession = UUID(), otherNotebookSession = UUID()
+        var requests: [UUID: UUID] = [:]
+        var cancellations: [UUID: Bool] = [:]
+        let admitted = model.admitManualNotesSession(
+            notebookID: one, sessionID: firstSession,
+            onQuitRequest: { requests[firstSession] = $0 },
+            onQuitCommit: { _, _ in XCTFail("A cancelled quit must not commit") },
+            onQuitCancel: { _, restoreDraft in cancellations[firstSession] = restoreDraft },
+            onQuitFinalize: { _ in XCTFail("A cancelled quit must not finalize") }
+        )
+        XCTAssertTrue(admitted)
+        XCTAssertTrue(model.ownsManualNotesSession(notebookID: one, sessionID: firstSession))
+        XCTAssertFalse(model.admitManualNotesSession(
+            notebookID: one, sessionID: deniedSession,
+            onQuitRequest: { _ in XCTFail("A denied session must not join quit coordination") },
+            onQuitCommit: { _, _ in XCTFail("A denied session must not commit") },
+            onQuitCancel: { _, _ in XCTFail("A denied session must not receive callbacks") },
+            onQuitFinalize: { _ in XCTFail("A denied session must not finalize") }
+        ))
+        XCTAssertFalse(model.ownsManualNotesSession(notebookID: one, sessionID: deniedSession))
+        XCTAssertTrue(model.admitManualNotesSession(
+            notebookID: two, sessionID: otherNotebookSession,
+            onQuitRequest: { requests[otherNotebookSession] = $0 },
+            onQuitCommit: { _, _ in XCTFail("A cancelled quit must not commit") },
+            onQuitCancel: { _, restoreDraft in cancellations[otherNotebookSession] = restoreDraft },
+            onQuitFinalize: { _ in XCTFail("A cancelled quit must not finalize") }
+        ), "Different notebooks can have independent editors")
+
+        model.requestApplicationQuit()
+        let firstRequest = try XCTUnwrap(requests[firstSession])
+        XCTAssertEqual(requests[otherNotebookSession], firstRequest)
+        model.submitManualNotesQuitDecision(sessionID: firstSession, requestID: firstRequest, choice: .cancel)
+        XCTAssertEqual(cancellations[firstSession], false)
+        XCTAssertEqual(cancellations[otherNotebookSession], false)
+        XCTAssertTrue(model.ownsManualNotesSession(notebookID: one, sessionID: firstSession))
+        XCTAssertTrue(model.ownsManualNotesSession(notebookID: two, sessionID: otherNotebookSession))
+
+        model.releaseManualNotesSession(notebookID: two, sessionID: otherNotebookSession)
+        let replacement = UUID()
+        XCTAssertTrue(model.admitManualNotesSession(
+            notebookID: two, sessionID: replacement,
+            onQuitRequest: { _ in }, onQuitCommit: { _, _ in },
+            onQuitCancel: { _, _ in }, onQuitFinalize: { _ in }
+        ), "Releasing one notebook does not hold or release another notebook's session")
+    }
+    func testOpeningAnotherNotebookDuringQuitCancelsTheOldQuitSnapshot() async throws {
+        let directory = root(); defer { try? FileManager.default.removeItem(at: directory) }
+        let model = AppModel(edition: .baseline, directory: directory); await model.open()
+        model.createNotebook("One"); try await settled(model)
+        let one = try XCTUnwrap(model.selectedNotebookID)
+        model.createNotebook("Two"); try await settled(model)
+        let two = try XCTUnwrap(model.selectedNotebookID)
+        let firstSession = UUID(), lateSession = UUID()
+        var requestID: UUID?
+        var cancelled = false
+        XCTAssertTrue(model.admitManualNotesSession(
+            notebookID: one, sessionID: firstSession,
+            onQuitRequest: { requestID = $0 },
+            onQuitCommit: { _, _ in XCTFail("The cancelled quit must not commit") },
+            onQuitCancel: { _, _ in cancelled = true },
+            onQuitFinalize: { _ in XCTFail("The cancelled quit must not finalize") }
+        ))
+        model.requestApplicationQuit()
+        let oldRequestID = try XCTUnwrap(requestID)
+        XCTAssertTrue(model.admitManualNotesSession(
+            notebookID: two, sessionID: lateSession,
+            onQuitRequest: { _ in XCTFail("The new session must not join the old quit snapshot") },
+            onQuitCommit: { _, _ in XCTFail("The new session must not commit under the old quit") },
+            onQuitCancel: { _, _ in XCTFail("The new session was not part of the cancelled request") },
+            onQuitFinalize: { _ in XCTFail("The new session must not finalize under the old quit") }
+        ))
+        XCTAssertTrue(cancelled, "Admitting a new editor must cancel the stale quit request for existing editors")
+        XCTAssertTrue(model.ownsManualNotesSession(notebookID: one, sessionID: firstSession))
+        XCTAssertTrue(model.ownsManualNotesSession(notebookID: two, sessionID: lateSession))
+        model.submitManualNotesQuitDecision(sessionID: firstSession, requestID: oldRequestID, choice: .cancel)
+        XCTAssertTrue(model.ownsManualNotesSession(notebookID: two, sessionID: lateSession), "A stale quit decision must not terminate or release the new editor")
+    }
+    func testOpeningAnotherNotebookCannotCancelQuitDuringCommit() async throws {
+        let directory = root(); defer { try? FileManager.default.removeItem(at: directory) }
+        let model = AppModel(edition: .baseline, directory: directory); await model.open()
+        model.createNotebook("One"); try await settled(model)
+        let one = try XCTUnwrap(model.selectedNotebookID)
+        model.createNotebook("Two"); try await settled(model)
+        let two = try XCTUnwrap(model.selectedNotebookID)
+        let firstSession = UUID(), lateSession = UUID()
+        var requestID: UUID?
+        var commitID: UUID?
+        var cancelled = false
+        XCTAssertTrue(model.admitManualNotesSession(
+            notebookID: one, sessionID: firstSession,
+            onQuitRequest: { requestID = $0 },
+            onQuitCommit: { request, _ in commitID = request },
+            onQuitCancel: { _, _ in cancelled = true },
+            onQuitFinalize: { _ in XCTFail("A failed commit must not finalize") }
+        ))
+        model.requestApplicationQuit()
+        let id = try XCTUnwrap(requestID)
+        model.submitManualNotesQuitDecision(sessionID: firstSession, requestID: id, choice: .discard)
+        XCTAssertEqual(commitID, id, "The coordinator must have entered the commit phase")
+        XCTAssertFalse(model.admitManualNotesSession(
+            notebookID: two, sessionID: lateSession,
+            onQuitRequest: { _ in XCTFail("A denied session must not join an in-flight quit") },
+            onQuitCommit: { _, _ in XCTFail("A denied session must not commit") },
+            onQuitCancel: { _, _ in XCTFail("A denied session must not receive callbacks") },
+            onQuitFinalize: { _ in XCTFail("A denied session must not finalize") }
+        ), "An in-flight quit commit cannot safely be cancelled by a new editor")
+        model.completeManualNotesQuitCommit(sessionID: firstSession, requestID: id, success: false)
+        XCTAssertTrue(cancelled)
+        XCTAssertTrue(model.ownsManualNotesSession(notebookID: one, sessionID: firstSession))
+        XCTAssertFalse(model.ownsManualNotesSession(notebookID: two, sessionID: lateSession))
+    }
+    func testApplicationQuitWaitsForEveryDecisionAndCommitExactlyOnce() async throws {
+        let directory = root(); defer { try? FileManager.default.removeItem(at: directory) }
+        let model = AppModel(edition: .baseline, directory: directory); await model.open()
+        model.createNotebook("One"); try await settled(model)
+        let one = try XCTUnwrap(model.selectedNotebookID)
+        model.createNotebook("Two"); try await settled(model)
+        let two = try XCTUnwrap(model.selectedNotebookID)
+        let first = UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
+        let second = UUID(uuidString: "00000000-0000-0000-0000-000000000002")!
+        var requestIDs: [UUID: UUID] = [:]
+        var requestCounts: [UUID: Int] = [:]
+        var commitCalls: [(UUID, ManualNotesQuitChoice)] = []
+        var finalized: [UUID: Int] = [:]
+        var terminationCount = 0
+        model.terminateApplication = { terminationCount += 1 }
+        for (notebookID, sessionID) in [(one, first), (two, second)] {
+            XCTAssertTrue(model.admitManualNotesSession(
+                notebookID: notebookID, sessionID: sessionID,
+                onQuitRequest: { id in requestIDs[sessionID] = id; requestCounts[sessionID, default: 0] += 1 },
+                onQuitCommit: { _, choice in commitCalls.append((sessionID, choice)) },
+                onQuitCancel: { _, _ in XCTFail("Successful commits must not cancel") },
+                onQuitFinalize: { _ in finalized[sessionID, default: 0] += 1 }
+            ))
+        }
+        model.requestApplicationQuit()
+        model.requestApplicationQuit()
+        let requestID = try XCTUnwrap(requestIDs[first])
+        XCTAssertEqual(requestIDs[second], requestID)
+        XCTAssertEqual(requestCounts[first], 1, "A repeated request must not open a second coordination round")
+        XCTAssertEqual(requestCounts[second], 1)
+
+        model.submitManualNotesQuitDecision(sessionID: first, requestID: requestID, choice: .close)
+        XCTAssertTrue(commitCalls.isEmpty, "No editor commits before every editor has decided")
+        XCTAssertEqual(terminationCount, 0)
+        model.submitManualNotesQuitDecision(sessionID: second, requestID: requestID, choice: .discard)
+        XCTAssertEqual(commitCalls.count, 1)
+        XCTAssertEqual(commitCalls[0].0, first)
+        XCTAssertEqual(commitCalls[0].1, .close)
+        XCTAssertEqual(terminationCount, 0, "Termination waits for the first commit acknowledgement")
+
+        model.completeManualNotesQuitCommit(sessionID: first, requestID: requestID, success: true)
+        XCTAssertEqual(commitCalls.count, 2)
+        XCTAssertEqual(commitCalls[1].0, second)
+        XCTAssertEqual(commitCalls[1].1, .discard)
+        XCTAssertEqual(terminationCount, 0)
+        model.completeManualNotesQuitCommit(sessionID: first, requestID: requestID, success: true)
+        model.completeManualNotesQuitCommit(sessionID: UUID(), requestID: requestID, success: true)
+        XCTAssertEqual(terminationCount, 0, "Stale or repeated acknowledgements cannot skip an active commit")
+
+        model.completeManualNotesQuitCommit(sessionID: second, requestID: requestID, success: true)
+        XCTAssertEqual(terminationCount, 1)
+        XCTAssertEqual(finalized[first], 1)
+        XCTAssertEqual(finalized[second], 1)
+        model.completeManualNotesQuitCommit(sessionID: second, requestID: requestID, success: true)
+        XCTAssertEqual(terminationCount, 1, "Termination happens exactly once")
+    }
+    func testApplicationQuitCommitFailureAbortsAndRestoresCompletedDiscard() async throws {
+        let directory = root(); defer { try? FileManager.default.removeItem(at: directory) }
+        let model = AppModel(edition: .baseline, directory: directory); await model.open()
+        model.createNotebook("One"); try await settled(model)
+        let one = try XCTUnwrap(model.selectedNotebookID)
+        model.createNotebook("Two"); try await settled(model)
+        let two = try XCTUnwrap(model.selectedNotebookID)
+        let first = UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
+        let second = UUID(uuidString: "00000000-0000-0000-0000-000000000002")!
+        var requestIDs: [UUID: UUID] = [:]
+        var commits: [UUID] = []
+        var cancellations: [UUID: Bool] = [:]
+        var finalized = 0
+        var terminationCount = 0
+        model.terminateApplication = { terminationCount += 1 }
+        for (notebookID, sessionID) in [(one, first), (two, second)] {
+            XCTAssertTrue(model.admitManualNotesSession(
+                notebookID: notebookID, sessionID: sessionID,
+                onQuitRequest: { requestIDs[sessionID] = $0 },
+                onQuitCommit: { _, _ in commits.append(sessionID) },
+                onQuitCancel: { _, restoreDraft in cancellations[sessionID] = restoreDraft },
+                onQuitFinalize: { _ in finalized += 1 }
+            ))
+        }
+        model.requestApplicationQuit()
+        let requestID = try XCTUnwrap(requestIDs[first])
+        model.submitManualNotesQuitDecision(sessionID: first, requestID: requestID, choice: .discard)
+        model.submitManualNotesQuitDecision(sessionID: second, requestID: requestID, choice: .close)
+        XCTAssertEqual(commits, [first])
+        model.completeManualNotesQuitCommit(sessionID: first, requestID: requestID, success: true)
+        XCTAssertEqual(commits, [first, second])
+        model.completeManualNotesQuitCommit(sessionID: second, requestID: requestID, success: false)
+        XCTAssertEqual(terminationCount, 0)
+        XCTAssertEqual(finalized, 0)
+        XCTAssertEqual(cancellations[first], true, "A completed discard must be restored if a later commit fails")
+        XCTAssertEqual(cancellations[second], false)
+        model.completeManualNotesQuitCommit(sessionID: second, requestID: requestID, success: true)
+        XCTAssertEqual(terminationCount, 0, "A stale acknowledgement after abort cannot terminate")
+    }
+    func testSynchronousQuitCancellationStopsStaleCallbacksAndAllowsFreshRequest() async throws {
+        let directory = root(); defer { try? FileManager.default.removeItem(at: directory) }
+        let model = AppModel(edition: .baseline, directory: directory); await model.open()
+        model.createNotebook("One"); try await settled(model)
+        let one = try XCTUnwrap(model.selectedNotebookID)
+        model.createNotebook("Two"); try await settled(model)
+        let two = try XCTUnwrap(model.selectedNotebookID)
+        let first = UUID(), second = UUID()
+        var requestIDs: [UUID: [UUID]] = [:]
+        var requestCounts: [UUID: Int] = [:]
+        var cancelCounts: [UUID: Int] = [:]
+        var cancelFirstRequest = true
+        var terminationCount = 0
+        model.terminateApplication = { terminationCount += 1 }
+        for (notebookID, sessionID) in [(one, first), (two, second)] {
+            XCTAssertTrue(model.admitManualNotesSession(
+                notebookID: notebookID, sessionID: sessionID,
+                onQuitRequest: { [weak model] requestID in
+                    requestIDs[sessionID, default: []].append(requestID)
+                    requestCounts[sessionID, default: 0] += 1
+                    if cancelFirstRequest {
+                        cancelFirstRequest = false
+                        model?.submitManualNotesQuitDecision(sessionID: sessionID, requestID: requestID, choice: .cancel)
+                    }
+                },
+                onQuitCommit: { _, _ in XCTFail("Synchronous cancellation must prevent commits") },
+                onQuitCancel: { _, _ in cancelCounts[sessionID, default: 0] += 1 },
+                onQuitFinalize: { _ in XCTFail("Synchronous cancellation must not finalize") }
+            ))
+        }
+
+        model.requestApplicationQuit()
+        XCTAssertEqual(requestCounts.values.reduce(0, +), 1, "Once a callback cancels synchronously, no later session receives the stale request")
+        XCTAssertEqual(cancelCounts[first], 1)
+        XCTAssertEqual(cancelCounts[second], 1, "Cancellation is fanned out to every registered session")
+        XCTAssertEqual(terminationCount, 0)
+
+        model.requestApplicationQuit()
+        XCTAssertEqual(requestCounts.values.reduce(0, +), 3, "A fresh request reaches both registered sessions")
+        let freshRequestID = try XCTUnwrap(requestIDs[first]?.last)
+        XCTAssertEqual(try XCTUnwrap(requestIDs[second]?.last), freshRequestID)
+        model.submitManualNotesQuitDecision(sessionID: first, requestID: freshRequestID, choice: .cancel)
+        XCTAssertEqual(cancelCounts[first], 2)
+        XCTAssertEqual(cancelCounts[second], 2)
+        XCTAssertEqual(terminationCount, 0)
+    }
     func testCorruptStartupPreservesFilesAndDisablesMutations() async throws {
         let directory = root(); defer { try? FileManager.default.removeItem(at: directory) }
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)

@@ -12,15 +12,15 @@ PROFILES = {
     "custom": {
         "repository": "pip-research",
         "products": {
-            "baseline-enhanced": ("ResearchBaselineEnhanced", "Research Baseline Enhanced", "uk.pipreps.research.baseline.enhanced", "0.2.0"),
-            "pip": ("PipResearch", "Pip Research", "uk.pipreps.research", "0.1.1"),
-            "pip-enhanced": ("PipResearchEnhanced", "Pip Research Enhanced", "uk.pipreps.research.enhanced", "0.2.0"),
+            "baseline-enhanced": ("ResearchBaselineEnhanced", "Research Baseline Enhanced", "uk.pipreps.research.baseline.enhanced", "0.2.1"),
+            "pip": ("PipResearch", "Pip Research", "uk.pipreps.research", "0.1.2"),
+            "pip-enhanced": ("PipResearchEnhanced", "Pip Research Enhanced", "uk.pipreps.research.enhanced", "0.2.1"),
         },
     },
     "replica": {
         "repository": "pip-research-replica",
         "products": {
-            "baseline": ("ResearchBaseline", "Research Baseline", "uk.pipreps.research.baseline", "0.1.1"),
+            "baseline": ("ResearchBaseline", "Research Baseline", "uk.pipreps.research.baseline", "0.1.2"),
         },
     },
 }

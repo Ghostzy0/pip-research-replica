@@ -1,12 +1,10 @@
 # Roadmap
 
-- Repair and re-evaluate optional local draft generation only after representative model outputs satisfy the strict response contract; the current live Qwen response was rejected as malformed, no draft was saved, and the feature remains off by default and unaccepted.
+- Keep the absent-fact failure visible: the writer repeats weekday hours when asked about public holidays without acknowledging missing support. Do not weaken expectations or the strict validator to hide this gap; retain the experimental/default-off boundary. Conflict-plus-persistence and hostile-source passed in the opt-in run; a raw Qwen3.5 0.8B comparison repeated the missing-support failure and was not adopted.
+- Finish packaged native Notes review for one-editor-per-notebook ownership across scenes and explicit Save, Discard, or Cancel quit behavior, including pending writes and failure recovery.
+- Complete lawful reference comparisons and broader accessibility/device acceptance, including VoiceOver, reduced motion, macOS 14, and Intel where available.
+- Improve retrieval and evidence-grounded synthesis without weakening exact source anchors or abstention.
+- Evaluate additional local source formats and OCR with explicit local/online data boundaries.
+- Measure larger libraries before selecting a persistent vector/full-text index or expanding language support.
 
-- Complete signed-in reference comparisons and broader native accessibility/device acceptance.
-- Improve semantic recall and evidence-supported synthesis without weakening exact source anchors or abstention.
-- Evaluate an in-process permissively licensed local generator to remove optional daemon setup; verify weights/licences/integrity/hardware first.
-- Add safe backup/restore, source-version comparison and content search across notebook history.
-- Evaluate OCR and additional source formats with explicit local/online data boundaries.
-- Measure larger libraries before adding a persistent vector/FTS store and broader language support.
-
-These are proposals and parity gaps, not shipped capabilities or promised dates. The runnable original baseline remains supported alongside Pip.
+These are proposals and open acceptance work, not shipped capabilities or promised dates. The four existing editions remain separate releases over the shared implementation.

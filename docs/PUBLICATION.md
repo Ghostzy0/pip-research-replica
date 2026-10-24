@@ -1,19 +1,22 @@
-# Publication and package verification
+# Publication history
 
-Source is published in [pip-research](https://github.com/Ghostzy0/pip-research) (three editions) and [pip-research-replica](https://github.com/Ghostzy0/pip-research-replica) (Neutral Core only). Both are original, partial workflow implementations.
+**Updated 24 October 2026.** The existing public repositories and 23 October experimental alpha releases are live and preserved:
 
-[Passing hosted verification](https://github.com/Ghostzy0/pip-research-replica/actions/runs/39892438845) ran the tests and all owned release builds on macOS 15.7.9 arm64 / Swift 6.1.2. Independent local review checked both export inventories, privacy scans, shared-source equality, signatures, identifiers and bundled resources. A fresh remote clone matched every audited payload hash.
+- [`Ghostzy0/pip-research`](https://github.com/Ghostzy0/pip-research) contains Neutral Plus, Pip Core, and Pip Plus. Its published alpha release is [`research-alpha-2026.10.23`](https://github.com/Ghostzy0/pip-research/releases/tag/research-alpha-2026.10.23), with Core `0.1.1` and Plus `0.2.0` packages.
+- [`Ghostzy0/pip-research-replica`](https://github.com/Ghostzy0/pip-research-replica) contains Neutral Core. Its published alpha release is [`research-alpha-2026.10.23`](https://github.com/Ghostzy0/pip-research-replica/releases/tag/research-alpha-2026.10.23), with a `0.1.1` package.
 
-The common ResearchCore manifest SHA-256 is `c0f5d6e969b4d21dfed7f027a39bf90ea4193c4f1783695b374ba6ec7ba536e9`. The initial reviewed public source pins are [custom ad90ca7](https://github.com/Ghostzy0/pip-research/commit/ad90ca71b80f1231e4cf4f95318026dad7f25f33) and [replica 806ba66](https://github.com/Ghostzy0/pip-research-replica/commit/806ba66d12e3fd77a3fa222cd9f51a40743ea920). Later documentation commits do not change this source pin.
+Those releases and assets are historical artifacts and have not been replaced. The next intended versions are Core `0.1.2` and Plus `0.2.1`. **No 24 October source update or package release is announced here.** Publication remains pending final export review, frozen-package/native checks, and the release process.
 
-## Package identities
+## Current qualification evidence
 
-These local arm64 packages were rebuilt from the reviewed source on macOS 27.0.1 / Swift 6.4, with profile-specific setup resources. Copied executables were stripped before ad-hoc signing. They are not Developer ID signed or notarized. Release availability and final native smoke results are stated in the repository's release notes; this table does not itself claim a published download or complete native acceptance. Archive SHA-256 values are supplied with each actual release in SHA256SUMS.txt and ARTIFACTS.json.
+The 24 October qualification-3 source suite completed 76 cases: 73 passed, 3 opt-in live-writer cases skipped, 0 failures. All four source-declared products were built, ad-hoc signature-verified, and scanned for private-path strings. These are local source/package checks; they do not establish public-export privacy/licence acceptance, fresh-clone reproducibility of the resumed export, native Notes interaction, or release publication.
 
-| App | Executable SHA-256 |
-| --- | --- |
-| Research Baseline 0.1.1 | `0209f2186c8f52d00558f0a1b4d54601e735871e42aaa07e11e0a8abb61efafd` |
+One bounded synthetic Qwen3 1.7B output returned valid JSON with the requested citation IDs and named the disagreement between two passages. It completed in 2.739 seconds but misleadingly interpreted source/revision dates as dates for the source values. Separately, the opt-in production-model run passed the conflict-plus-persistence case and the hostile-source case. The absent-fact case failed two expectations; asked for public-holiday hours, it returned `The station garden closes at 18:00 on weekdays [1].` without acknowledging the source had weekday-hours information only. One synthetic persistence scenario passed, but general grounding and broader product persistence remain unverified. The writer remains experimental and disabled by default.
 
-## Remaining boundaries
+The new Notes source coordinates one editor owner per notebook across scenes, preserves the notebook target captured by each scene, and requests Save, Discard, or Cancel choices before app quit. It waits for persistence/recovery work. Source/state tests exist, but the resumed packaged native behavior remains unaccepted, including dirty Cmd-Q and multi-window flows.
 
-One earlier exact-build synthetic note check restored Unicode text after controlled termination, then saved and cleared the recovery sidecar. Its screenshots show post-restore state, not the restore prompt. Cmd-Q in a dirty Notes modal remains unresolved. Full reference parity, generated Studio workflows, VoiceOver, reduced-motion human acceptance, Intel and macOS 14 runtime coverage remain incomplete. Optional Qwen drafting failed attribution and source-agreement checks and stays off by default and unaccepted.
+## Published release checks, 23 October
+
+At the time of the historical alpha publication, the release notes recorded hosted CI, independent export/profile checks, and downloaded asset checksum verification. Those receipts apply to the 23 October source and packages only. They are not evidence for the resumed source, next intended versions, or any future release.
+
+The current source and release boundaries are described in [verification](../TESTING.md), [parity](../PARITY.md), and the [edition matrix](EDITION-MATRIX.md). Package downloads are ad-hoc signed, not Developer ID signed or notarised. Verify an asset's published checksum and inspect the release notes before installing it.

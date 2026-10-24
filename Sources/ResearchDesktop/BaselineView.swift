@@ -11,6 +11,7 @@ public struct BaselineView: View {
     @State private var renameTarget: UUID?
     @State private var pendingNotebook: Notebook?
     @State private var pendingRemoval: SourceDocument?
+    @State private var notesNotebookID: UUID?
     public init(model: AppModel) { self.model = model }
     public var body: some View {
         Group {
@@ -19,15 +20,20 @@ public struct BaselineView: View {
         }
         .frame(minWidth: 850, minHeight: 570)
         .focusedSceneValue(\.createResearchNotebook, { guard !editingTitle else { return }; newTitle = ""; renaming = false; editingTitle = true })
+        .focusedSceneValue(\.openResearchNotes, openNotes)
         .onExitCommand { if model.busy { model.stop() } }
         .sheet(isPresented: $model.showResearchTools) { EnhancedWorkspaceView(model: model, palette: palette) }
         .sheet(isPresented: $model.showAbout) { AboutResearchView(model: model, palette: palette) { model.showAbout = false } }
-        .sheet(isPresented: $model.showNotes) { if let id = model.selectedNotebookID { NotebookNotesView(model: model, notebookID: id) } }
+        .sheet(isPresented: notesPresented) { if let id = notesNotebookID { NotebookNotesView(model: model, notebookID: id) } }
         .sheet(isPresented: $editingTitle) { TitleSheet(title: renaming ? "Rename notebook" : "New notebook", value: $newTitle, busy: model.busy, error: model.error) { if renaming { model.renameNotebook(newTitle, id: renameTarget) { editingTitle = false } } else { model.createNotebook(newTitle) { editingTitle = false } } } cancel: { editingTitle = false } }
         .sheet(item: $pendingNotebook) { notebook in NotebookRemovalSheet(notebook: notebook) { model.deleteNotebook(notebook); pendingNotebook = nil } cancel: { pendingNotebook = nil } }
         .sheet(item: $pendingRemoval) { source in RemovalSheet(source: source) { model.removeSource(source); pendingRemoval = nil } cancel: { pendingRemoval = nil } }
         .sheet(isPresented: passageBinding) { if let resolved = model.resolved { PassageView(resolved: resolved) { model.resolved = nil } } }
     }
+    private var notesPresented: Binding<Bool> {
+        Binding(get: { notesNotebookID != nil }, set: { if !$0 { notesNotebookID = nil } })
+    }
+    private func openNotes() { guard notesNotebookID == nil, !model.busy, let id = model.selectedNotebookID else { return }; notesNotebookID = id }
     // Neutral Plus preserves its qualified layout while the replica evolves separately.
     private var legacyWorkspace: some View {
         NavigationSplitView {
@@ -63,7 +69,7 @@ public struct BaselineView: View {
                         Text(model.selectedNotebook?.title ?? model.edition.displayName).font(.title2)
                         HStack {
                         if let notebook = model.selectedNotebook {
-                            Button("Notes (\(model.manualNotes.count))") { model.showNotes = true }
+                            Button("Notes (\(model.manualNotes.count))") { openNotes() }
                             if model.edition.enhanced { Button("Research tools") { model.showResearchTools = true } }
                             Button("Rename") { newTitle = notebook.title; renameTarget = notebook.id; renaming = true; editingTitle = true }
                             Button("Remove notebook") { pendingNotebook = notebook }
@@ -124,7 +130,7 @@ public struct BaselineView: View {
                 Spacer()
                 if !showingLibrary, let notebook = model.selectedNotebook {
                     Menu("Notebook") {
-                        Button("Notes (\(model.manualNotes.count))") { model.showNotes = true }
+                        Button("Notes (\(model.manualNotes.count))") { openNotes() }
                         Button("Rename") { newTitle = notebook.title; renameTarget = notebook.id; renaming = true; editingTitle = true }
                         Button("Export Markdown") { model.exportNotebook() }
                         Button("Remove notebook", role: .destructive) { pendingNotebook = notebook }
@@ -275,10 +281,10 @@ public struct BaselineView: View {
             HStack {
                 Text("Manual notes").font(.subheadline).fontWeight(.semibold)
                 Spacer()
-                Button("Open notes") { model.showNotes = true }.disabled(model.busy)
+                Button("Open notes") { openNotes() }.disabled(model.busy)
             }
             if model.manualNotes.isEmpty { Text("No notes yet").font(.caption).foregroundStyle(.secondary) }
-            else { ForEach(model.manualNotes.prefix(3)) { note in Button(note.title) { model.showNotes = true }.buttonStyle(.plain).font(.caption).lineLimit(1) } }
+            else { ForEach(model.manualNotes.prefix(3)) { note in Button(note.title) { openNotes() }.buttonStyle(.plain).font(.caption).lineLimit(1) } }
             Divider()
             Text("Not available in this version").font(.subheadline).fontWeight(.semibold)
             Text("Audio and video overviews, mind maps, reports and generated summaries are not implemented. This panel does not reproduce the reference’s full Studio workflows.").font(.caption).foregroundStyle(.secondary)

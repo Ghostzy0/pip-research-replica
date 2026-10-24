@@ -19,6 +19,7 @@ struct PipPalette {
     var surface: Color { colour(oat ? 0xF0ECE4 : 0xFAFAFA, oat ? 0x211D18 : 0x171716) }
     var fill: Color { colour(oat ? 0xEAE6DF : 0xF3F3F3, oat ? 0x2B251F : 0x212120) }
     var line: Color { colour(oat ? 0xDED8CF : 0xEBEBEB, oat ? 0x3B342D : 0x2A2A29) }
+    var controlLine: Color { colour(oat ? 0x8D8275 : 0x8E8E8E, oat ? 0x76695B : 0x737371) }
     var secondary: Color { colour(oat ? 0x615A51 : 0x555555, oat ? 0xB5A99B : 0xA3A3A0) }
     var danger: Color { colour(0xAE2A1F, 0xFF8B7E) }
     var warning: Color { colour(0x95600A, 0xF2B544) }

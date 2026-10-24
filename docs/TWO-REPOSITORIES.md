@@ -1,14 +1,24 @@
-# Public repository profiles
+# Two public repositories
 
-Source is published in two repositories with fresh app-specific histories. Names identify distribution profiles; they do not imply complete reference parity.
+**Updated 24 October 2026.** The existing public repositories and their history are preserved. Their first experimental alpha releases are historical 23 October artifacts; the resumed source changes are being prepared for a later reviewed release. No 24 October release is claimed here.
 
-| Repository | Runnable products | Owner aliases |
-| --- | --- | --- |
-| [pip-research](https://github.com/Ghostzy0/pip-research) | ResearchBaselineEnhanced, PipResearch, PipResearchEnhanced | Neutral Plus, Pip Core, Pip Plus |
-| [pip-research-replica](https://github.com/Ghostzy0/pip-research-replica) | ResearchBaseline | Neutral Core |
+| Public repository | Editions | Intended source versions | Current boundary |
+|---|---|---|---|
+| [`pip-research`](https://github.com/Ghostzy0/pip-research) | Neutral Plus, Pip Core, Pip Plus | `0.2.1`, `0.1.2`, `0.2.1` | Shared original implementation; next export/package batch still requires final review and release |
+| [`pip-research-replica`](https://github.com/Ghostzy0/pip-research-replica) | Neutral Core | `0.1.2` | Partial workflow recreation; full reference fidelity is not accepted |
 
-Both carry the same original ResearchCore and ResearchDesktop sources and shared regression tests. Each exports only its owned executable entry points. Shared core hashes, reviewed public commits, passing hosted CI and exact package identities are recorded in [publication verification](PUBLICATION.md). Build aliases, bundle identifiers, versions and separate storage folders are in [the edition matrix](EDITION-MATRIX.md).
+Existing historical release links: [custom editions, 23 October](https://github.com/Ghostzy0/pip-research/releases/tag/research-alpha-2026.10.23) and [Neutral Core, 23 October](https://github.com/Ghostzy0/pip-research-replica/releases/tag/research-alpha-2026.10.23). Those assets and source snapshots are not replaced by the intended versions above.
 
-Each profile passed 67 tests with one intentional live-model skip and all owned release builds on hosted macOS 15 / Swift 6.1. Local packages also passed signatures, metadata, resources and privacy checks. Binary download availability and exact-package native smoke are stated in actual release notes. All distributed packages are experimental, locally ad-hoc signed and not notarized.
+## Shared source and variant identity
 
-The implementation remains a partial workflow recreation. Full native reference parity, generated Studio features, accessibility/device coverage and accepted local generation remain incomplete. The optional writer failed citation and source-agreement checks and stays off by default. A bounded synthetic note-recovery flow passed; dirty-modal Cmd-Q and same-notebook multiwindow recovery need further work. See [testing](../TESTING.md) and [parity](../PARITY.md).
+Both public repositories contain the shared core and tests. The custom repository owns three executable entry points; the replica repository owns only Neutral Core. Each public repository has its own build profile and manifest. The common implementation does not make the four editions identical: Core omits Plus search/saved-excerpt controls, while Plus editions contain the same additions in neutral or Pip presentation.
+
+The per-notebook Notes owner is bound to the notebook captured by its scene, preventing a selection change in another scene from redirecting edits. Only one Notes editor can own a given notebook at a time. App quit coordinates explicit Save, Discard, or Cancel choices across active editors and waits for successful save/recovery completion. These changes have source-level tests; the resumed packaged native behavior is not yet accepted.
+
+## Evidence and limits
+
+The 24 October qualification-3 default suite completed 76 cases: 73 passed, 3 opt-in live-writer cases skipped, 0 failures. All four release products were built, signature-verified, and scanned for private-path strings. Separately, an opt-in run passed conflict-plus-persistence and hostile-source cases; absent-fact failed two expectations: asked for public-holiday hours, it returned `The station garden closes at 18:00 on weekdays [1].` without acknowledging that the source only gives weekday hours. It did not explicitly invent holiday hours. This does not establish native UI acceptance, accessibility, a clean-clone review of the next export, or public release of the new versions.
+
+One bounded synthetic Qwen3 1.7B response took 2.739 seconds and included the required citation IDs and stated that the two source values conflict. It also misleadingly interpreted source/revision dates as dates for the values. Separately, the opt-in production-model run passed the conflict-plus-persistence and hostile-source cases. The absent-fact case failed two expectations: asked for public-holiday hours, it returned `The station garden closes at 18:00 on weekdays [1].` It did not explicitly invent holiday hours, but failed to acknowledge that the source gives weekday hours only and no public-holiday information. One synthetic persistence scenario passed, but general grounding and broader persistence remain unverified. The writer remains experimental and off by default.
+
+NotebookLM/Gemini Notebook parity, generated Studio/audio workflows, OCR and web/video/cloud imports remain incomplete. See [parity](../PARITY.md), [testing](../TESTING.md), [the edition matrix](EDITION-MATRIX.md), and the updated [publication record](PUBLICATION.md).

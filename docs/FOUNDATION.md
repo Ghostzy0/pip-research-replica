@@ -10,13 +10,17 @@ App-owned originals are hashed; passages retain immutable source/page/heading/UT
 
 ## Optional local drafting
 
-An explicitly requested draft can use a separately installed [Ollama](https://ollama.com/) local process and [qwen3:0.6b-q4_K_M](https://ollama.com/library/qwen3:0.6b-q4_K_M). This optional runtime is not needed for imports, search, evidence answers, citation navigation, persistence or export. It is not bundled, automatically installed or downloaded by the app. No cloud endpoint/account/provider credentials are used.
+An explicitly requested draft can use a separately installed [Ollama](https://ollama.com/) local process and the fingerprint-checked Qwen3 1.7B quantisation. This optional runtime is not needed for imports, search, evidence answers, citation navigation, persistence or export. It is not bundled, automatically installed or downloaded by the app. No cloud endpoint/account/provider credentials are used.
 
-Read-only provenance of the test machine's already-installed artifact on 23 October 2026:
+### Current model pin — inspected 24 October 2026
 
-- Runtime Ollama `0.40.6`; [runtime source licence](https://github.com/ollama/ollama/blob/main/LICENSE): MIT.
-- Weight blob SHA256 `7f4030143c1c477224c5434f8272c662a8b042079a0a584f0a27a1684fe2e1fa`, 522,640,096 bytes.
-- Local manifest SHA256 `6f76d4346c34ba89df6e137fb661b4bb4daf322c1151b6ef0dfda981070a851f`; displayed model id `7df6b6e09427`.
-- Apache-2.0 licence layer SHA256 `d18a5cc71b84bc4af394a31116bd3932b42241de70c77d2b76d69a314ec8aa12`, Copyright 2024 Alibaba Cloud. [Official Qwen3-0.6B model card](https://huggingface.co/Qwen/Qwen3-0.6B) independently labels Apache-2.0.
+- Model: [`qwen3:1.7b-q4_K_M`](https://ollama.com/library/qwen3:1.7b-q4_K_M).
+- Inspected weight blob: 1,359,279,776 bytes; SHA-256 `3d0b790534fe4b79525fc3692950408dca41171676ed7e21db57af5c65ef6ab6`.
+- Ollama manifest fingerprint required by the app: `8f68893c685c3ddff2aa3fffce2aa60a30bb2da65ca488b61fff134a4d1730e7`.
+- The checked licence layer is Apache-2.0, SHA-256 `d18a5cc71b84bc4af394a31116bd3932b42241de70c77d2b76d69a314ec8aa12`, copyright 2024 Alibaba Cloud. See the [Qwen3 1.7B model page](https://ollama.com/library/qwen3:1.7b-q4_K_M) and its [licence layer](https://ollama.com/library/qwen3:1.7b/blobs/d18a5cc71b84).
 
-These pins identify the artifact inspected; mutable registry tags can change. No weight redistributability claim is extended to unrelated models/quantisations. Runtime inference and output quality are separate evidence, recorded only when actually tested. Generated drafts can make unsupported claims even when every citation number is valid; the UI labels them for verification.
+### Historical model pin — inspected 23 October 2026
+
+The earlier production pin was [`qwen3:0.6b-q4_K_M`](https://ollama.com/library/qwen3:0.6b-q4_K_M). The inspected weight blob was 522,640,096 bytes, SHA-256 `7f4030143c1c477224c5434f8272c662a8b042079a0a584f0a27a1684fe2e1fa`; the model fingerprint was `7df6b6e09427a769808717c0a93cadc4ae99ed4eb8bf5ca557c90846becea435`. Its checked Apache-2.0 licence layer had SHA-256 `d18a5cc71b84bc4af394a31116bd3932b42241de70c77d2b76d69a314ec8aa12`, copyright 2024 Alibaba Cloud. See the [Qwen3 model card](https://huggingface.co/Qwen/Qwen3-0.6B).
+
+Ollama `0.40.6` was the runtime observed on 23 October; this is historical evidence, not a current minimum-version claim. The app checks the reported manifest fingerprint before sending passages. Registry tags are mutable, so a changed artifact is blocked until reviewed. No weight redistributability claim is extended to other models or quantisations. Runtime behavior and output quality are separate: a later 1.7B run persisted one synthetic conflict answer, but its source-date interpretation was misleading, and an absent-fact live case failed two expectations. Drafting stays optional, experimental, and off by default; exact boundaries are in [Local drafting](LOCAL-DRAFTING.md).

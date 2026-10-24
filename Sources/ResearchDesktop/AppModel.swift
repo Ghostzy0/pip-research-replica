@@ -18,7 +18,6 @@ import ResearchCore
     @Published public var showAbout = false
     @Published public var useLocalDraft = false
     @Published public var showResearchTools = false
-    @Published public var showNotes = false
     @Published public var focusedAnswerID: UUID?
     @Published public var historyResults: [HistorySearchResult] = []
     @Published public private(set) var historyRevision = 0
@@ -30,6 +29,11 @@ import ResearchCore
     private var store: ResearchStore?
     private var opening = false
     private var operation: Task<Void, Never>?
+    private var manualNotesOwners: [UUID: UUID] = [:]
+    private var manualNotesSessions: [UUID: ManualNotesSession] = [:]
+    private var pendingManualNotesQuit: PendingManualNotesQuit?
+    var terminateApplication: () -> Void = { NSApp.terminate(nil) }
+    public var isFinishingManualNotesQuit: Bool { pendingManualNotesQuit?.committing == true }
     public var selectedNotebook: Notebook? { library.notebooks.first { $0.id == selectedNotebookID } }
     public var sources: [SourceDocument] { library.sources.filter { $0.notebookID == selectedNotebookID } }
     public var filteredSources: [SourceDocument] { sources.filter { sourceQuery.isEmpty || $0.title.localizedCaseInsensitiveContains(sourceQuery) } }
@@ -167,7 +171,7 @@ import ResearchCore
         }
     }
     public func updateManualNote(_ note: ManualNote, title: String, body: String, onSaved: @escaping (ManualNote) -> Void = { _ in }) {
-        guard ready, !busy, selectedNotebookID == note.notebookID else { return }
+        guard ready, !busy else { return }
         run("Saving manual note") { [self] in
             guard let store else { throw ResearchError.libraryClosed }
             let saved = try await store.updateManualNote(id: note.id, title: title, body: body)
@@ -175,7 +179,7 @@ import ResearchCore
         }
     }
     public func deleteManualNote(_ note: ManualNote, onDeleted: @escaping () -> Void = {}) {
-        guard ready, !busy, selectedNotebookID == note.notebookID else { return }
+        guard ready, !busy else { return }
         run("Removing manual note") { [self] in
             guard let store else { throw ResearchError.libraryClosed }
             try await store.deleteManualNote(id: note.id)
@@ -193,6 +197,111 @@ import ResearchCore
     public func deleteManualNoteDraft(notebookID: UUID) async throws {
         guard ready, let store else { throw ResearchError.libraryClosed }
         try await store.deleteManualNoteDraft(notebookID: notebookID)
+    }
+    @discardableResult
+    public func admitManualNotesSession(
+        notebookID: UUID,
+        sessionID: UUID,
+        onQuitRequest: @escaping (UUID) -> Void,
+        onQuitCommit: @escaping (UUID, ManualNotesQuitChoice) -> Void,
+        onQuitCancel: @escaping (UUID, Bool) -> Void,
+        onQuitFinalize: @escaping (UUID) -> Void
+    ) -> Bool {
+        guard manualNotesOwners[notebookID] == nil || manualNotesOwners[notebookID] == sessionID else { return false }
+        if let pending = pendingManualNotesQuit {
+            guard !pending.committing else { return false }
+            cancelManualNotesQuit(requestID: pending.requestID)
+        }
+        manualNotesOwners[notebookID] = sessionID
+        manualNotesSessions[sessionID] = ManualNotesSession(
+            notebookID: notebookID,
+            onQuitRequest: onQuitRequest,
+            onQuitCommit: onQuitCommit,
+            onQuitCancel: onQuitCancel,
+            onQuitFinalize: onQuitFinalize
+        )
+        return true
+    }
+    public func releaseManualNotesSession(notebookID: UUID, sessionID: UUID) {
+        guard manualNotesOwners[notebookID] == sessionID else { return }
+        if let pending = pendingManualNotesQuit, pending.sessionIDs.contains(sessionID) {
+            if pending.decisions[sessionID] != nil { return }
+            cancelManualNotesQuit(requestID: pending.requestID)
+        }
+        manualNotesOwners[notebookID] = nil
+        manualNotesSessions[sessionID] = nil
+    }
+    public func cancelManualNotesQuitForSessionClose(sessionID: UUID) {
+        guard let pending = pendingManualNotesQuit, pending.sessionIDs.contains(sessionID) else { return }
+        cancelManualNotesQuit(requestID: pending.requestID)
+    }
+    public func ownsManualNotesSession(notebookID: UUID, sessionID: UUID) -> Bool {
+        manualNotesOwners[notebookID] == sessionID
+    }
+    public func requestApplicationQuit() {
+        guard pendingManualNotesQuit == nil else { return }
+        let sessionIDs = Set(manualNotesSessions.keys)
+        guard !sessionIDs.isEmpty else { terminateApplication(); return }
+        let requestID = UUID()
+        pendingManualNotesQuit = PendingManualNotesQuit(requestID: requestID, sessionIDs: sessionIDs)
+        for id in sessionIDs {
+            guard pendingManualNotesQuit?.requestID == requestID else { break }
+            manualNotesSessions[id]?.onQuitRequest(requestID)
+        }
+    }
+    public func submitManualNotesQuitDecision(sessionID: UUID, requestID: UUID, choice: ManualNotesQuitChoice) {
+        guard var pending = pendingManualNotesQuit, pending.requestID == requestID,
+              pending.sessionIDs.contains(sessionID), !pending.committing else { return }
+        if choice == .cancel {
+            cancelManualNotesQuit(requestID: requestID)
+            return
+        }
+        pending.decisions[sessionID] = choice
+        guard Set(pending.decisions.keys) == pending.sessionIDs else {
+            pendingManualNotesQuit = pending
+            return
+        }
+        pending.committing = true
+        pending.commitOrder = pending.sessionIDs.sorted { $0.uuidString < $1.uuidString }
+        pendingManualNotesQuit = pending
+        startNextManualNotesQuitCommit(requestID: requestID)
+    }
+    public func completeManualNotesQuitCommit(sessionID: UUID, requestID: UUID, success: Bool) {
+        guard var pending = pendingManualNotesQuit, pending.requestID == requestID,
+              pending.committing, pending.commitIndex < pending.commitOrder.count,
+              pending.commitOrder[pending.commitIndex] == sessionID else { return }
+        guard success else {
+            cancelManualNotesQuit(requestID: requestID)
+            return
+        }
+        pending.completed.insert(sessionID)
+        pending.commitIndex += 1
+        guard pending.commitIndex == pending.commitOrder.count else {
+            pendingManualNotesQuit = pending
+            startNextManualNotesQuitCommit(requestID: requestID)
+            return
+        }
+        pendingManualNotesQuit = nil
+        for id in pending.sessionIDs { manualNotesSessions[id]?.onQuitFinalize(requestID) }
+        terminateApplication()
+    }
+    private func startNextManualNotesQuitCommit(requestID: UUID) {
+        guard let pending = pendingManualNotesQuit, pending.requestID == requestID,
+              pending.commitIndex < pending.commitOrder.count else { return }
+        let sessionID = pending.commitOrder[pending.commitIndex]
+        guard let decision = pending.decisions[sessionID], let session = manualNotesSessions[sessionID] else {
+            cancelManualNotesQuit(requestID: requestID)
+            return
+        }
+        session.onQuitCommit(requestID, decision)
+    }
+    private func cancelManualNotesQuit(requestID: UUID) {
+        guard let pending = pendingManualNotesQuit, pending.requestID == requestID else { return }
+        pendingManualNotesQuit = nil
+        let restoreDiscarded = Set(pending.completed.filter { pending.decisions[$0] == .discard })
+        for id in pending.sessionIDs {
+            manualNotesSessions[id]?.onQuitCancel(requestID, restoreDiscarded.contains(id))
+        }
     }
     public func searchHistory(_ query: String) async {
         guard edition.enhanced, let notebookID = selectedNotebookID, let store else { historyResults = []; return }
@@ -250,6 +359,26 @@ import ResearchCore
             question = "What time does the station garden close?"; status = "Sample sources added. Ask a question to check the passages."
         }
     }
+}
+
+public enum ManualNotesQuitChoice: Equatable { case save, discard, close, cancel }
+
+private struct ManualNotesSession {
+    let notebookID: UUID
+    let onQuitRequest: (UUID) -> Void
+    let onQuitCommit: (UUID, ManualNotesQuitChoice) -> Void
+    let onQuitCancel: (UUID, Bool) -> Void
+    let onQuitFinalize: (UUID) -> Void
+}
+
+private struct PendingManualNotesQuit {
+    let requestID: UUID
+    let sessionIDs: Set<UUID>
+    var decisions: [UUID: ManualNotesQuitChoice] = [:]
+    var completed = Set<UUID>()
+    var commitOrder: [UUID] = []
+    var commitIndex = 0
+    var committing = false
 }
 
 public enum Edition: String {

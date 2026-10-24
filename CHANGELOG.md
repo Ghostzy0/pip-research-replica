@@ -1,15 +1,14 @@
 # Changelog
 
-## 0.1.1-alpha.1 — experimental, partial workflow recreation
+## Unreleased — intended next version: Neutral Core 0.1.2
 
-This repository profile contains one runnable Neutral Core app, Research Baseline. It is an original native implementation of local notebooks, copied PDF/TXT/Markdown sources, source selection, evidence chats, exact citation navigation and Markdown notebook export.
+This version number identifies the next source/package batch; this entry does not announce a published release. The existing 23 October experimental alpha remains available and unchanged. See [publication history](docs/PUBLICATION.md).
 
-Current source implements manual research notes and interrupted-session draft recovery. One controlled native SIGTERM recovery flow passed for a synthetic Unicode note; a dirty-modal Cmd-Q attempt showed no visible quit or alert and remains unresolved.
+- Neutral Core provides local notebooks, copied PDF/TXT/Markdown sources, source selection, evidence chats, citation navigation, manual notes, and Markdown export. It is an experimental partial workflow recreation, not accepted full NotebookLM/Gemini Notebook fidelity.
+- Manual notes now use one editor owner per notebook across scenes and retain the scene's captured notebook target. App quit requests explicit Save, Discard, or Cancel decisions and waits for successful writes/recovery. Source tests cover the state coordinator; packaged native Notes/quit acceptance remains pending.
+- Qualification-3 default Swift suite: 76 cases: 73 passed, 3 opt-in live-writer cases skipped, 0 failures. All four products were built, ad-hoc signature-verified, and checked for private-path strings. Separately, an opt-in run passed conflict-plus-persistence and hostile-source cases; absent-fact failed two expectations: asked for public-holiday hours, it returned `The station garden closes at 18:00 on weekdays [1].` without acknowledging that the source only gives weekday hours. It did not explicitly invent holiday hours.
+- Optional local Qwen3 1.7B drafting stays off by default and experimental. One bounded synthetic response included citation IDs and named the conflict, but gave a misleading interpretation of source dates. Separately, an opt-in live run passed conflict-plus-persistence and hostile-source cases; absent-fact failed two expectations: asked for public-holiday hours, it returned `The station garden closes at 18:00 on weekdays [1].` without acknowledging that the source only gives weekday hours. It did not explicitly invent holiday hours. One persistence scenario passed; general grounding remains unverified.
 
-The shared default suite completed 68 cases (67 passed, one opt-in live test skipped, zero failures). After the package audit found local debug metadata in the first artifacts, all four bundles were refreshed from the qualified release binaries with local debug metadata stripped before signing. Refreshed bundles passed signature and private-path checks with the original LICENSE and NOTICES bundled.
+## 23 October 2026 — historical experimental alpha
 
-Both v3 profile exports subsequently passed independent fresh local-clone test/build/signature checks: three custom products and one replica product. Native manual-notes interaction review, Neutral Core faithful-recreation acceptance, broader interface accessibility review and public remote publication remain pending.
-
-Neutral Core has not passed the separate faithful-reference recreation gate. It does not provide NotebookLM's full notes, web/video import, audio overview or AI Studio workflows. Optional local Qwen drafting remains off by default and unaccepted; after correcting the request grammar and schema, the tested writer returned valid JSON without citations and asserted an unsupported agreement between sources. The app rejected it, saved no draft and unloaded the model.
-
-No Google or NotebookLM assets, code or branding are included. This is not a full-equivalence or stable-production claim.
+The previous Neutral Core alpha was published from `pip-research-replica` as version `0.1.1`. The public release remains unchanged; its own source, package, and qualification evidence remain historical. See [publication history](docs/PUBLICATION.md).

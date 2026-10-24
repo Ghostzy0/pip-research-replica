@@ -1,31 +1,30 @@
 # Research Notebook
 
-An independent native macOS recreation of a focused NotebookLM / Gemini Notebook workflow: ask questions about local documents, inspect supporting passages, follow citations to their source and export the notebook. It is not affiliated with or endorsed by Google, NotebookLM, Gemini or Apple.
+An independent native macOS partial recreation of a focused NotebookLM / Gemini Notebook workflow: ask questions about local documents, inspect supporting passages, follow citations to sources, and export a notebook. It is not affiliated with or endorsed by Google, NotebookLM, Gemini, or Apple.
 
-**Experimental, partial workflow recreation.** This repository exports one runnable Neutral Core app:
+**Experimental partial workflow recreation.** This repository exports Neutral Core only:
 
-| Build alias | Swift product | App | Version |
-| --- | --- | --- | --- |
-| baseline | ResearchBaseline | Research Baseline | 0.1.1 |
+| Build alias | Swift product | Edition | Intended source version |
+|---|---|---|---:|
+| baseline | ResearchBaseline | Research Baseline | 0.1.2 |
 
-The current source implements editable manual research notes and recovery of unsaved note edits after an interrupted session. The shared test suite and both v3 profile clean-clone checks passed; native manual-notes interaction review remains pending. One controlled SIGTERM recovery test restored and saved a synthetic Unicode note after relaunch; Cmd-Q while the dirty editor modal was open showed no visible quit or alert, which remains unresolved.
+The next intended version is not yet published. The 23 October alpha remains the existing historical release; see [publication history](docs/PUBLICATION.md).
 
-The shared default suite completed 68 cases: 67 passed, one opt-in live test was skipped, and none failed. Both v3 profile exports passed independent fresh local-clone tests (67 passed, one opt-in live skip, 68 total cases); the custom profile built and signature-verified three products and the replica profile built and signature-verified one. Bundle metadata/resources matched and executable private-path scans were clean. The source is published in this repository. Independent final export review and hosted macOS 15 / Swift 6.1 tests and release-product builds passed; see [publication and package verification](docs/PUBLICATION.md). Package scripts remove local debug metadata from the copied executable before signing. This does not establish faithful reference parity, native manual-notes acceptance or accepted local generation.
+The source implements notebook-scoped manual notes and interrupted-edit recovery. One Notes editor may own a notebook across scenes, with the scene retaining the notebook target it opened. App quit collects explicit Save, Discard, or Cancel choices and waits for successful writes/recovery. Source tests cover the state coordination, but the resumed packaged native Notes and Cmd-Q paths remain unaccepted.
 
-## What works
+## What it does
 
-- Create local notebooks and import copied PDF, UTF-8 TXT and Markdown sources.
-- Write and edit manual research notes; recover unsaved note edits after an interrupted session.
-- Choose the sources used for a question and retain evidence chats after restart.
-- Inspect exact quoted passages, source pages and headings; open the original PDF at a cited page.
-- Compare conflicting statements, see when no evidence was found and export notebook evidence as Markdown.
-- Use macOS-native file import, text selection and PDFKit passage navigation.
+- Create local notebooks and import copied PDF, UTF-8 TXT, and Markdown sources.
+- Select evidence sources for a question and retain chats after restart.
+- Inspect quoted passages, source pages/headings, and open cited locations.
+- Compare conflicting statements, see when retrieval found no support, and export notebook evidence as Markdown.
+- Write manual notebook notes, separate from imported sources and generated drafts.
 
-This implements useful local-source and citation-navigation behavior with original code. It does not reproduce the complete NotebookLM/Gemini Notebook product or visual identity.
+Evidence responses are not guaranteed facts. The app does not reproduce the complete NotebookLM/Gemini Notebook product or visual identity.
 
 ## Build
 
-Requires macOS 14+ and Swift 6+. No third-party Swift packages, accounts, server or model weights are needed for evidence workflows.
+Requires macOS 14+ and Swift 6+. Evidence workflows need no third-party packages, accounts, server, or model weights.
 
 ~~~sh
 swift test --jobs 2
@@ -33,12 +32,10 @@ swift test --jobs 2
 open 'dist/Research Baseline.app'
 ~~~
 
-The app is locally ad-hoc signed, not Developer ID signed or notarised. Do not disable macOS security globally. See [AI setup](docs/AI-SETUP.md), [testing](TESTING.md), [parity](PARITY.md) and [the edition matrix](docs/EDITION-MATRIX.md).
+The app is ad-hoc signed, not Developer ID signed or notarised. Do not disable macOS security globally. See [AI setup](docs/AI-SETUP.md), [testing](TESTING.md), and [parity](PARITY.md).
 
-## Local data and limits
+## Qualification status
 
-Imported sources are copied into the Research Baseline Application Support folder. Notebook data is readable JSON and is not encrypted. Back up the full folder with the app closed. The optional local Qwen drafting path is off by default and unaccepted; after correcting the request grammar and schema, the tested model returned valid JSON but omitted required citations and made an unsupported agreement claim. The app rejected it and saved no draft. See [security](SECURITY.md) and [local drafting](docs/LOCAL-DRAFTING.md).
+The 24 October qualification-3 default suite completed 76 cases: 73 passed, 3 opt-in live-writer cases skipped, 0 failures. All four source-declared products built, passed ad-hoc signature verification, and passed private-path string scans. Separately, an opt-in live run passed the conflict-plus-persistence and hostile-source cases; absent-fact failed two expectations: asked for public-holiday hours, it returned `The station garden closes at 18:00 on weekdays [1].` without acknowledging that the source only gives weekday hours. It did not explicitly invent holiday hours. This is not general grounding evidence. These checks do not establish native Notes acceptance or full reference parity. Local generation remains off by default and experimental.
 
-The app does not provide built-in OCR, webpage/video/cloud imports, audio overviews, AI Studio or other generated artifacts, sharing or complete reference parity. Markdown notebook export is available, but there is no full Studio export workflow. Answers and citations need human review; retrieval can miss relevant information. Broader accessibility, device and reference-workflow acceptance remains pending.
-
-This project is an independent original implementation inspired by a narrow NotebookLM/Gemini Notebook workflow. It does not use Google's assets, code or branding.
+Neutral Core does not implement full generative answers, Studio/audio/video artifacts, web/video/cloud imports, OCR, sharing, or complete reference behavior. Broader accessibility, macOS 14, and Intel acceptance remain open. See [testing](TESTING.md), [parity](PARITY.md), and [publication history](docs/PUBLICATION.md).
