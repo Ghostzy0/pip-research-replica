@@ -239,7 +239,10 @@ public actor ResearchStore {
             try Task.checkCancellation()
             _ = try verifiedOriginal(source)
         }
-        let found = try Retriever.search(question: question, sources: sources)
+        // Older libraries contain only line passages. Derive additive logical blocks from the
+        // already-verified stored pages; old passage IDs and saved citations remain untouched.
+        let indexedSources = sources.map(SourceImporter.addingLogicalBlocks)
+        let found = try Retriever.search(question: question, sources: indexedSources)
         let citations = found.passages.map { Citation(passage: $0.1, sourceTitle: $0.0.title) }
         var caveats = ["Extractive evidence mode quotes matching passages; it does not generate a factual conclusion or establish that a question is answered."]
         if found.mode == .lexical { caveats.append("The system sentence embedding is unavailable; this answer uses lexical matching only.") }
@@ -253,7 +256,15 @@ public actor ResearchStore {
             }.joined(separator: "\n\n")
         }
         let answer = ResearchAnswer(id: UUID(), question: question, text: text, citations: citations, retrievalMode: found.mode, isAbsent: citations.isEmpty, possibleConflict: found.conflict, caveats: caveats, createdAt: Date())
-        var next = state; next.chats.append(ChatTurn(notebookID: notebookID, answer: answer)); try commit(next)
+        var next = state
+        let augmentedByID = Dictionary(uniqueKeysWithValues: indexedSources.map { ($0.id, $0) })
+        for index in next.sources.indices {
+            if let augmented = augmentedByID[next.sources[index].id] {
+                next.sources[index] = augmented
+            }
+        }
+        next.chats.append(ChatTurn(notebookID: notebookID, answer: answer))
+        try commit(next)
         return answer
     }
 
