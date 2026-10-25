@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import ResearchCore
 
@@ -127,6 +128,7 @@ public struct NotebookNotesView: View {
         .background(palette?.canvas ?? Color(nsColor: .windowBackgroundColor))
         .foregroundStyle(palette?.ink ?? Color.primary)
         .tint(palette?.ink ?? Color.accentColor)
+        .modifier(NotesTerminationPresentationPolicy())
         .onAppear(perform: admitSession)
         .onDisappear(perform: releaseSession)
         .interactiveDismissDisabled(dirty || model.busy || activeQuitRequest != nil || closeActionPending)
@@ -653,4 +655,80 @@ public struct NotebookNotesView: View {
         }
     }
     private enum NoteAlert: Identifiable { case discardForSelection, delete; var id: Int { switch self { case .discardForSelection: 0; case .delete: 1 } } }
+}
+
+/// Lets app termination reach the existing Notes quit coordinator while this sheet is presented.
+private struct NotesTerminationPresentationPolicy: ViewModifier {
+    @ViewBuilder
+    func body(content: Content) -> some View {
+#if compiler(>=6.1)
+        if #available(macOS 15.4, *) {
+            content.presentationPreventsAppTermination(false)
+        } else {
+            content.background(NotesTerminationWindowPolicy())
+        }
+#else
+        content.background(NotesTerminationWindowPolicy())
+#endif
+    }
+}
+
+/// macOS 14 through 15.3 fallback, scoped to this sheet's own modal window.
+private struct NotesTerminationWindowPolicy: NSViewRepresentable {
+    func makeCoordinator() -> NotesTerminationWindowPolicyCoordinator { NotesTerminationWindowPolicyCoordinator() }
+
+    func makeNSView(context: Context) -> NotesTerminationWindowTrackingView {
+        let view = NotesTerminationWindowTrackingView()
+        view.coordinator = context.coordinator
+        view.isHidden = true
+        return view
+    }
+
+    func updateNSView(_ view: NotesTerminationWindowTrackingView, context: Context) {
+        view.coordinator = context.coordinator
+        context.coordinator.attach(to: view.window)
+    }
+
+    static func dismantleNSView(_ view: NotesTerminationWindowTrackingView, coordinator: NotesTerminationWindowPolicyCoordinator) {
+        coordinator.detach()
+        view.coordinator = nil
+    }
+}
+
+@MainActor
+final class NotesTerminationWindowPolicyCoordinator {
+    private weak var window: NSWindow?
+    private var previousPreventionValue: Bool?
+
+    func attach(to newWindow: NSWindow?) {
+        if window === newWindow {
+            newWindow?.preventsApplicationTerminationWhenModal = false
+            return
+        }
+        detach()
+        guard let newWindow else { return }
+        previousPreventionValue = newWindow.preventsApplicationTerminationWhenModal
+        window = newWindow
+        newWindow.preventsApplicationTerminationWhenModal = false
+    }
+
+    func detach() {
+        if let window, let previousPreventionValue {
+            window.preventsApplicationTerminationWhenModal = previousPreventionValue
+        }
+        window = nil
+        previousPreventionValue = nil
+    }
+}
+
+@MainActor
+final class NotesTerminationWindowTrackingView: NSView {
+    weak var coordinator: NotesTerminationWindowPolicyCoordinator?
+
+    override var intrinsicContentSize: NSSize { .zero }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        coordinator?.attach(to: window)
+    }
 }

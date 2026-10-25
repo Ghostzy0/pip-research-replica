@@ -10,7 +10,7 @@ An independent native macOS partial recreation of a focused NotebookLM / Gemini 
 
 The next intended version is not yet published. The 23 October alpha remains the existing historical release; see [publication history](docs/PUBLICATION.md).
 
-The source implements notebook-scoped manual notes and interrupted-edit recovery. Each scene retains its captured notebook target, with one Notes editor owner per notebook. Normal termination begins with AppKit's immediate cancel response while the asynchronous Save/Discard/Cancel coordinator runs on the normal run loop. One guarded termination reentry is permitted only if model identity, session revision, and the empty session registry still match. This source behavior is not native UI acceptance.
+The source implements notebook-scoped manual notes and interrupted-edit recovery. Each scene retains its captured notebook target, with one Notes editor owner per notebook. Q8 lets termination ingress through the Notes sheet reach the existing Save/Discard/Cancel coordinator: it uses SwiftUI's [`presentationPreventsAppTermination(false)`](https://developer.apple.com/documentation/swiftui/view/presentationpreventsapptermination(_:)) on macOS 15.4+ with Swift 6.1+, and a scoped, restoring [AppKit modal-window setting](https://developer.apple.com/documentation/appkit/nswindow/preventsapplicationterminationwhenmodal) on macOS 14–15.3 and earlier compiler versions. This source change is not native UI acceptance.
 
 ## What it does
 
@@ -36,6 +36,6 @@ The app is ad-hoc signed, not Developer ID signed or notarised. Do not disable m
 
 ## Qualification status
 
-Qualification 7 completed 85 cases: 82 passed, 3 opt-in live-writer cases skipped, 0 failed. All four products built and passed ad-hoc signature and private-path checks. These are local source/package checks, not native UI acceptance. Hosted 77-pass/3-skip checks qualify the earlier AppKit bridge only; fresh hosted CI for the current public payload remains outstanding. Neutral Core does not generate answers; the shared optional-writer fixtures do not activate generation in this edition.
+Qualification 8 completed 87 cases: 84 passed, 3 opt-in live-writer cases skipped, 0 failed. All four products built and passed ad-hoc signature, resource, and private-path checks. These are local source/package checks, not native UI acceptance. Hosted 82-pass/3-skip checks qualify Q7 only; fresh hosted CI for the Q8 public payload remains outstanding. Exact Q7/v4 native evidence confirmed that dirty Cmd-Q and menu Quit showed no alert while the same PID remained alive; note save/reopen, restart persistence, and clean main-window Quit passed. Q8 remains untested natively. Neutral Core does not generate answers; the shared optional-writer fixtures do not activate generation in this edition.
 
 Neutral Core does not implement full generative answers, Studio/audio/video artifacts, web/video/cloud imports, OCR, sharing, or complete reference behavior. Broader accessibility, macOS 14, and Intel acceptance remain open. See [testing](TESTING.md), [parity](PARITY.md), and [publication history](docs/PUBLICATION.md).
