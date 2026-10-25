@@ -25,6 +25,7 @@ cat > "$output/Contents/Info.plist" <<PLIST
 <key>CFBundleShortVersionString</key><string>$version</string>
 <key>CFBundleVersion</key><string>1</string>
 <key>LSMinimumSystemVersion</key><string>14.0</string>
+<key>NSPrincipalClass</key><string>ResearchApplication</string>
 <key>NSHighResolutionCapable</key><true/>
 <key>NSHumanReadableCopyright</key><string>Copyright 2026 Pip Research contributors. MIT.</string>
 </dict></plist>

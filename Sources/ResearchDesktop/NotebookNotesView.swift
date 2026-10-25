@@ -327,7 +327,7 @@ public struct NotebookNotesView: View {
             return
         }
         guard sessionAvailable else {
-            model.submitManualNotesQuitDecision(sessionID: sessionID, requestID: requestID, choice: .close)
+            model.submitManualNotesQuitDecision(sessionID: sessionID, requestID: requestID, choice: .cancel)
             return
         }
         if dirty { showingCloseChoices = true }
@@ -351,6 +351,10 @@ public struct NotebookNotesView: View {
         activeQuitRequest = requestID
         switch choice {
         case .close:
+            guard sessionAvailable, !dirty else {
+                model.completeManualNotesQuitCommit(sessionID: sessionID, requestID: requestID, success: false)
+                return
+            }
             let pending = recoveryTask
             Task {
                 await pending?.value
