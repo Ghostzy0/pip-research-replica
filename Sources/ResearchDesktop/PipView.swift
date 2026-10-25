@@ -13,6 +13,7 @@ public struct PipView: View {
     @State private var title = ""
     @State private var pendingSource: SourceDocument?
     @State private var pendingNotebook: Notebook?
+    @State private var notesNotebookID: UUID?
     @State private var showSources = false
     @FocusState private var composerFocused: Bool
     public init(model: AppModel) { self.model = model }
@@ -40,6 +41,7 @@ public struct PipView: View {
         .preferredColorScheme(scheme)
         .tint(palette.ink)
         .focusedSceneValue(\.createResearchNotebook, { guard !editingTitle else { return }; title = ""; renaming = false; editingTitle = true })
+        .focusedSceneValue(\.openResearchNotes, openNotes)
         .onExitCommand { if model.busy { model.stop() } }
         .sheet(isPresented: $editingTitle) { TitleSheet(title: renaming ? PipCopy.renameNotebook : PipCopy.newNotebook, value: $title, busy: model.busy, error: model.error) { if renaming { model.renameNotebook(title, id: renameTarget) { editingTitle = false } } else { model.createNotebook(title) { editingTitle = false } } } cancel: { editingTitle = false } }
         .sheet(item: $pendingSource) { source in RemovalSheet(source: source) { model.removeSource(source); pendingSource = nil } cancel: { pendingSource = nil } }
@@ -50,12 +52,16 @@ public struct PipView: View {
                 .frame(width: 420, height: 580).background(palette.canvas).foregroundStyle(palette.ink)
         }
         .sheet(isPresented: $model.showResearchTools) { EnhancedWorkspaceView(model: model, palette: palette) }
-        .sheet(isPresented: $model.showNotes) { if let id = model.selectedNotebookID { NotebookNotesView(model: model, notebookID: id, palette: palette) } }
+        .sheet(isPresented: notesPresented) { if let id = notesNotebookID { NotebookNotesView(model: model, notebookID: id, palette: palette) } }
         .sheet(isPresented: $model.showAbout) { AboutResearchView(model: model, palette: palette) { model.showAbout = false } }
         .onChange(of: model.status) { _, status in
             if let application = NSApp { NSAccessibility.post(element: application, notification: .announcementRequested, userInfo: [.announcement: status, .priority: NSAccessibilityPriorityLevel.medium.rawValue]) }
         }
     }
+    private var notesPresented: Binding<Bool> {
+        Binding(get: { notesNotebookID != nil }, set: { if !$0 { notesNotebookID = nil } })
+    }
+    private func openNotes() { guard notesNotebookID == nil, !model.busy, let id = model.selectedNotebookID else { return }; notesNotebookID = id }
     private var sidebar: some View {
         VStack(alignment: .leading, spacing: PipMetrics.section) {
             HStack(spacing: PipMetrics.small) {
@@ -106,7 +112,7 @@ public struct PipView: View {
                 if narrow { Button { showSources = true } label: { Label(PipCopy.sources, systemImage: "doc.on.doc") }.buttonStyle(PipButtonStyle(palette: palette)) }
                 Button { model.exportNotebook() } label: { Label(PipCopy.export, systemImage: "square.and.arrow.up") }.buttonStyle(PipButtonStyle(palette: palette)).disabled(model.busy).keyboardShortcut("e", modifiers: [.command, .shift])
                 Menu {
-                    Button("Notes (\(model.manualNotes.count))") { model.showNotes = true }
+                    Button("Notes (\(model.manualNotes.count))") { openNotes() }
                     Button(PipCopy.renameNotebook) { title = model.selectedNotebook?.title ?? ""; renameTarget = model.selectedNotebookID; renaming = true; editingTitle = true }
                     Button("Remove notebook", role: .destructive) { pendingNotebook = model.selectedNotebook }
                 } label: { Image(systemName: "ellipsis").frame(width: 28, height: 28) }.menuStyle(.borderlessButton).fixedSize().help(PipCopy.more).accessibilityLabel(PipCopy.more).disabled(model.busy)

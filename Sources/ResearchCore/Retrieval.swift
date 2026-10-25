@@ -67,7 +67,9 @@ enum Retriever {
             seen.insert(entry.source.id); selected.append((entry.source, entry.passage))
             if selected.count == 6 { break }
         }
-        for entry in relevant where selected.count < 6 && !selected.contains(where: { $0.0.id == entry.source.id && $0.1.id == entry.passage.id }) {
+        for entry in relevant where selected.count < 6 && !selected.contains(where: {
+            $0.0.id == entry.source.id && rangesOverlap($0.1, entry.passage)
+        }) {
             selected.append((entry.source, entry.passage))
         }
         // Conservative conflict signal, never an assertion of a definitive contradiction.
@@ -78,6 +80,12 @@ enum Retriever {
         let numericClaims = values.filter { !$0.isEmpty }
         let conflict = Set(selected.map { $0.0.id }).count > 1 && Set(numericClaims).count > 1
         return Result(passages: selected, mode: qvector == nil ? .lexical : .hybrid, conflict: conflict)
+    }
+    private static func rangesOverlap(_ lhs: Passage, _ rhs: Passage) -> Bool {
+        guard lhs.page == rhs.page else { return false }
+        let lhsEnd = lhs.utf16Location + lhs.utf16Length
+        let rhsEnd = rhs.utf16Location + rhs.utf16Length
+        return lhs.utf16Location < rhsEnd && rhs.utf16Location < lhsEnd
     }
     private static func aspectCompatible(question: String, passage: String) -> Bool {
         let groups: [[String]] = [
@@ -92,7 +100,7 @@ enum Retriever {
             let numericDate = p.range(of: #"\b(?:19|20)\d{2}\b|\b\d{1,2}[/.-]\d{1,2}(?:[/.-]\d{2,4})?\b"#, options: .regularExpression) != nil
             if passageWords.isDisjoint(with: temporal) && !numericDate { return false }
         }
-        if !questionWords.isDisjoint(with: ["time", "hour", "hours"]) {
+        if !questionWords.isDisjoint(with: ["time", "times", "hour", "hours"]) {
             let clock = p.range(of: #"\b\d{1,2}:\d{2}\b|\b\d{1,2}\s*(?:am|pm)\b"#, options: .regularExpression) != nil
             let timingWords = ["time", "hour", "hours", "noon", "midnight", "morning", "evening", "afternoon", "undecided", "unknown"]
             let passageWords = Set(p.components(separatedBy: CharacterSet.letters.inverted).filter { !$0.isEmpty })

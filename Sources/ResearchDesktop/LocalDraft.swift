@@ -6,8 +6,8 @@ import ResearchCore
 /// Callers must opt in, display the result as untrusted plain text, and retain the exact
 /// supplied citation ordering for human verification. This service never saves a draft.
 public actor LocalDraftService {
-    public static let model = "qwen3:0.6b-q4_K_M"
-    public static let modelDigest = "7df6b6e09427a769808717c0a93cadc4ae99ed4eb8bf5ca557c90846becea435"
+    public static let model = "qwen3:1.7b-q4_K_M"
+    public static let modelDigest = "8f68893c685c3ddff2aa3fffce2aa60a30bb2da65ca488b61fff134a4d1730e7"
     public static let endpoint = URL(string: "http://127.0.0.1:11434/api/chat")!
     static let tagsEndpoint = URL(string: "http://127.0.0.1:11434/api/tags")!
     private let protocolClasses: [AnyClass]?
@@ -144,7 +144,7 @@ public enum LocalDraftError: Error, LocalizedError, Equatable {
         case .emptyQuestion: "Enter a question before creating a draft."
         case .noCitations: "Find supporting passages before creating a draft."
         case .inputTooLarge: "The question or passages exceed the local draft limits. Use a shorter question or fewer sources."
-        case .unavailable: "The existing local Ollama service or required qwen3:0.6b-q4_K_M model is unavailable. Evidence still works."
+        case .unavailable: "The existing local Ollama service or required qwen3:1.7b-q4_K_M model is unavailable. Evidence still works."
         case .timedOut: "The local draft took too long. Evidence is still available."
         case .transport: "The local draft connection failed. Evidence is still available."
         case .redirectBlocked: "The local service tried to redirect the request. The draft was blocked."

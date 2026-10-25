@@ -1,12 +1,10 @@
 # Roadmap
 
-- Repair and re-evaluate optional local draft generation only after representative model outputs satisfy the strict response contract; the current live Qwen response was rejected as malformed, no draft was saved, and the feature remains off by default and unaccepted.
+- Keep the absent-fact failure visible: the writer repeats weekday hours when asked about public holidays without acknowledging missing support. Do not weaken expectations or the strict validator to hide this gap; retain the experimental/default-off boundary. Conflict-plus-persistence and hostile-source passed in the opt-in run; a raw Qwen3.5 0.8B comparison repeated the missing-support failure and was not adopted.
+- The final v7 Neutral Plus slice passed fact-bearing retrieval, excerpt save/export, restart, dirty Cmd-Q Cancel with the same PID/edit, explicit Notes editor Save, and clean Cmd-Q/relaunch. It did not test Save in the quit-choice alert. Separate Q9 prior-package tests passed alert Save on all four variants, with Pip Core also passing app-menu Discard. Baseline, Pip Core, and Pip Plus each passed final v7 startup/saved-note/clean-quit smoke. Literal Dock Quit and other AppKit routes remain open.
+- Complete lawful reference comparisons and broader accessibility/device acceptance, including VoiceOver, reduced motion, macOS 14, and Intel where available.
+- Keep the fact-bearing retrieval regression in place. The earlier Q9 Neutral Plus package cited heading-only spans and omitted 18:00/19:00; see [public issue #6](https://github.com/ghostzy0/pip-research/issues/6). The final v7 Neutral Plus package passed this specific native retrieval/conflict case, with exact excerpt, export and restart. Q10 local qualification and both exact-head public CI runs passed; the scoped experimental patch is accepted for publication. Verify availability and checksums at the [custom release page](https://github.com/Ghostzy0/pip-research/releases/tag/research-alpha-2026.10.25) and [Neutral Core release page](https://github.com/Ghostzy0/pip-research-replica/releases/tag/research-alpha-2026.10.25) after publication. Broader parity, platform, accessibility, and model-grounding gaps remain open.
+- Evaluate additional local source formats and OCR with explicit local/online data boundaries.
+- Measure larger libraries before selecting a persistent vector/full-text index or expanding language support.
 
-- Complete signed-in reference comparisons and broader native accessibility/device acceptance.
-- Improve semantic recall and evidence-supported synthesis without weakening exact source anchors or abstention.
-- Evaluate an in-process permissively licensed local generator to remove optional daemon setup; verify weights/licences/integrity/hardware first.
-- Add safe backup/restore, source-version comparison and content search across notebook history.
-- Evaluate OCR and additional source formats with explicit local/online data boundaries.
-- Measure larger libraries before adding a persistent vector/FTS store and broader language support.
-
-These are proposals and parity gaps, not shipped capabilities or promised dates. The runnable original baseline remains supported alongside Pip.
+These are proposals and open acceptance work, not shipped capabilities or promised dates. The four existing editions remain separate releases over the shared implementation.

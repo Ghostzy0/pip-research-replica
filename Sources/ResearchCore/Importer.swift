@@ -54,8 +54,32 @@ enum SourceImporter {
                               originalFilename: "\(id.uuidString).\(kind == .markdown ? "md" : kind.rawValue)", importedAt: Date(), pages: pages, passages: passages, warnings: warnings)
     }
 
-    /// Index line-bounded chunks. Never normalize source text: every snippet is an exact substring.
+    /// Keep the original line passages stable and add exact-range logical blocks for retrieval.
+    /// Never normalize source text: every passage is an exact substring of its stored page.
     private static func passages(page: SourcePage, id: UUID, hash: String, markdown: Bool) -> [Passage] {
+        let lines = linePassages(page: page, id: id, hash: hash, markdown: markdown)
+        let knownIDs = Set(lines.map(\.id))
+        let blocks = logicalBlockPassages(page: page, id: id, hash: hash, markdown: markdown)
+            .filter { !knownIDs.contains($0.id) }
+        return lines + blocks
+    }
+
+    /// Additive upgrade path for libraries created before logical block passages existed.
+    /// Existing passage values and IDs are retained byte-for-byte.
+    static func addingLogicalBlocks(to source: SourceDocument) -> SourceDocument {
+        let additions = source.pages.flatMap {
+            logicalBlockPassages(page: $0, id: source.id, hash: source.sha256, markdown: source.kind == .markdown)
+        }
+        let knownIDs = Set(source.passages.map(\.id))
+        let missing = additions.filter { !knownIDs.contains($0.id) }
+        guard !missing.isEmpty else { return source }
+        return SourceDocument(id: source.id, notebookID: source.notebookID, title: source.title, kind: source.kind,
+                              sha256: source.sha256, originalFilename: source.originalFilename, importedAt: source.importedAt,
+                              pages: source.pages, passages: source.passages + missing, warnings: source.warnings)
+    }
+
+    /// Index the legacy per-line passages unchanged so persisted citations stay resolvable.
+    private static func linePassages(page: SourcePage, id: UUID, hash: String, markdown: Bool) -> [Passage] {
         let string = page.text as NSString
         var result: [Passage] = []
         var heading: String?
@@ -84,6 +108,56 @@ enum SourceImporter {
             }
             offset = NSMaxRange(line)
         }
+        return result
+    }
+
+    /// Group consecutive nonblank lines into bounded exact-range evidence blocks.
+    /// Markdown heading lines remain metadata and delimit blocks rather than entering snippets.
+    private static func logicalBlockPassages(page: SourcePage, id: UUID, hash: String, markdown: Bool) -> [Passage] {
+        let string = page.text as NSString
+        var result: [Passage] = []
+        var heading: String?
+        var blockStart: Int?
+        var blockEnd = 0
+        var blockHeading: String?
+
+        func appendBlock() {
+            guard let start = blockStart else { return }
+            var chunkStart = start
+            while chunkStart < blockEnd {
+                var length = min(1400, blockEnd - chunkStart)
+                let composed = string.rangeOfComposedCharacterSequences(for: NSRange(location: chunkStart, length: length))
+                length = min(NSMaxRange(composed), blockEnd) - chunkStart
+                let text = string.substring(with: NSRange(location: chunkStart, length: length))
+                let identifier = SourceImporter.hash(Data("\(hash)|\(page.number ?? 0)|\(chunkStart)|\(length)".utf8))
+                result.append(Passage(id: identifier, sourceID: id, sourceHash: hash, page: page.number,
+                                      heading: blockHeading, utf16Location: chunkStart, utf16Length: length, text: text))
+                chunkStart += length
+            }
+            blockStart = nil
+            blockEnd = 0
+            blockHeading = nil
+        }
+
+        var offset = 0
+        while offset < string.length {
+            let line = string.lineRange(for: NSRange(location: offset, length: 0))
+            let trimmed = string.substring(with: line).trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmed.isEmpty {
+                appendBlock()
+            } else if markdown && trimmed.hasPrefix("#") {
+                appendBlock()
+                heading = trimmed.drop(while: { $0 == "#" || $0 == " " }).description
+            } else {
+                if blockStart == nil {
+                    blockStart = line.location
+                    blockHeading = heading
+                }
+                blockEnd = NSMaxRange(line)
+            }
+            offset = NSMaxRange(line)
+        }
+        appendBlock()
         return result
     }
 }

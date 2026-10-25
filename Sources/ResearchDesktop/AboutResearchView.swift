@@ -11,7 +11,7 @@ struct AboutResearchView: View {
                 if model.edition.pip { PipPebble(palette: palette).frame(width: 64, height: 64) }
                 VStack(alignment: .leading, spacing: PipMetrics.tiny) {
                     Text(model.edition.displayName).font(.system(size: PipMetrics.title, weight: .semibold))
-                    Text("\(model.edition.enhanced ? "0.2.0" : "0.1.1") experimental · Original MIT source").font(.system(size: PipMetrics.meta)).foregroundStyle(palette.secondary)
+                    Text("\(model.edition.enhanced ? "0.2.1" : "0.1.2") experimental · Original MIT source").font(.system(size: PipMetrics.meta)).foregroundStyle(palette.secondary)
                 }
                 Spacer(); Button("Close", action: close).keyboardShortcut(.cancelAction)
             }
@@ -25,11 +25,11 @@ struct AboutResearchView: View {
             }.font(.system(size: PipMetrics.label)).foregroundStyle(palette.secondary)
             VStack(alignment: .leading, spacing: PipMetrics.small) {
                 Text("Optional local drafting").font(.headline).foregroundStyle(palette.ink)
-                Text("Drafting is off by default. The current pinned writer failed live checks: it omitted citations and made an unsupported claim. Rejected drafts preserve evidence and are not saved. Use exact evidence unless you choose to try this experimental option.")
+                Text("Drafting is experimental and off by default. A local model can make unsupported claims even when it includes citations. Check each claim against its sources. Responses without valid citation markers are rejected; your exact source evidence is preserved.")
                 DisclosureGroup("Advanced setup") {
                     VStack(alignment: .leading, spacing: PipMetrics.small) {
-                        Text("Install Ollama from its official website, start its local service, then install qwen3:0.6b-q4_K_M. The app contacts only 127.0.0.1:11434 and checks the verified manifest fingerprint before sending passages. No download or cloud fallback happens in the app.")
-                        Text("ollama pull qwen3:0.6b-q4_K_M").font(.system(.caption, design: .monospaced)).textSelection(.enabled)
+                        Text("Install Ollama from its official website, start its local service, then install \(LocalDraftService.model). The app contacts only 127.0.0.1:11434 and checks the verified manifest fingerprint before sending passages. No download or cloud fallback happens in the app.")
+                        Text("ollama pull \(LocalDraftService.model)").font(.system(.caption, design: .monospaced)).textSelection(.enabled)
                         Text("Registry tags can change. If the fingerprint differs, drafting is blocked; use evidence mode and check the setup documentation.")
                     }.padding(.top, PipMetrics.small)
                 }
